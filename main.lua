@@ -82,10 +82,26 @@ local function get_file_size(path)
     return nil
 end
 -- }}}1
+-- Format progress stats matching dua-cli style {{{1
+local function format_progress_stats(entry_count, elapsed_time)
+    local speed = elapsed_time > 0 and math.floor(entry_count / elapsed_time) or 0
+    return string.format("Processed %d entries in %.1fs (%d/s)  -> scanning <-", entry_count, elapsed_time, speed)
+end
+-- }}}1
+-- Show progress notification {{{1
+local function show_progress(entry_count, elapsed_time, prepend_msg)
+    local stats = format_progress_stats(entry_count, elapsed_time)
+    ya.notify {
+        title = "What size",
+        content = prepend_msg .. "\n" .. stats,
+        timeout = 1,
+    }
+end
+-- }}}1
 -- Function to get total size using dua-cli for better performance {{{1
 -- dua is a faster alternative to du for calculating directory sizes
--- Optimizations: batch paths in single call, fast-path for single files
-local function get_total_size(items)
+-- Optimizations: batch paths in single call, fast-path for single files, streaming output
+local function get_total_size(items, prepend_msg)
     if not items or #items == 0 then
         return 0
     end
@@ -97,16 +113,29 @@ local function get_total_size(items)
         local stat, err = fs.stat(items[1])
         if stat then
             if stat.is_dir then
-                -- Directory: use dua
+                -- Directory: use dua with progress streaming
                 local cmd = "dua aggregate " .. escape_shell_arg(items[1])
                 local handle = io.popen(cmd .. " 2>&1")
                 if handle then
-                    local output = handle:read("*a")
-                    handle:close()
-                    if output and output ~= "" then
-                        local size_str = output:match("^(%d+)")
-                        return size_str and tonumber(size_str) or nil
+                    local start_time = os.time()
+                    local entry_count = 0
+                    -- Stream line-by-line with progress updates
+                    for line in handle:lines() do
+                        entry_count = entry_count + 1
+                        local size_str = line:match("^(%d+)")
+                        if size_str then
+                            total = tonumber(size_str) or 0
+                        end
+                        -- Show progress every 100 entries or periodically
+                        if entry_count % 100 == 0 then
+                            local elapsed = os.difftime(os.time(), start_time)
+                            if elapsed > 0 then
+                                show_progress(entry_count, elapsed, prepend_msg)
+                            end
+                        end
                     end
+                    handle:close()
+                    return total ~= 0 and total or nil
                 end
                 return nil
             else
@@ -134,18 +163,24 @@ local function get_total_size(items)
         return nil
     end
 
-    local output = handle:read("*a")
-    handle:close()
-
-    if output and output ~= "" then
-        -- Sum up all sizes from dua output (each line is "SIZE\tPATH")
-        for line in output:gmatch("[^\n]+") do
-            local size_str = line:match("^(%d+)")
-            if size_str then
-                total = total + tonumber(size_str)
+    local start_time = os.time()
+    local entry_count = 0
+    -- Stream line-by-line with progress updates instead of blocking read
+    for line in handle:lines() do
+        entry_count = entry_count + 1
+        local size_str = line:match("^(%d+)")
+        if size_str then
+            total = total + tonumber(size_str)
+        end
+        -- Show progress every 100 entries
+        if entry_count % 100 == 0 then
+            local elapsed = os.difftime(os.time(), start_time)
+            if elapsed > 0 then
+                show_progress(entry_count, elapsed, prepend_msg)
             end
         end
     end
+    handle:close()
 
     return total ~= 0 and total or nil
 end
@@ -260,7 +295,7 @@ return {
             return
         end
 
-        local total_size = get_total_size(items)
+        local total_size = get_total_size(items, prepend_msg)
         if not total_size then
             ya.notify {
                 title = "What size",
