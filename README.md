@@ -1,10 +1,10 @@
-# what-size.yazi
+# what-size-dua.yazi
 
 A plugin for [yazi](https://github.com/sxyazi/yazi) to calculate the size of the current selection or the current working directory (if no selection is made).
 
 ## Compatibility
 
-what-size supports Yazi on Linux, macOS, and Windows.
+what-size-dua supports Yazi on Linux, macOS, and Windows.
 
 ### OS
 
@@ -16,7 +16,7 @@ what-size supports Yazi on Linux, macOS, and Windows.
 
 In an effort to make things easy, I keep `compatibility/yazi-x.y.z` branches with each pointing to the most up-to-date commit compatible with yazi release `x.y.z`. Full table below.
 
-|Yazi releases|what-size branch name|
+|Yazi releases|what-size-dua branch name|
 |---|---|
 |*[latest stable](https://github.com/sxyazi/yazi/releases/latest)*|`main`|
 |`25.5.28`|`compatibility/yazi-25.5.28`|
@@ -28,26 +28,47 @@ Please notice that `nightly` releses may work but are not explicitly supported.
 
 ## Requirements
 
+### On Yazi's version 25.5.28 or newer
+
+- `dua` - A faster disk usage analyzer (install via your package manager or [https://github.com/Byron/dua-cli](https://github.com/Byron/dua-cli))
+
+#### Installing `dua`
+
+You can install `dua` from the official project. Common install options:
+
+```sh
+# macOS (Homebrew)
+brew update
+brew install dua-cli
+
+# Linux (Arch)
+sudo pacman -S dua-cli
+
+# Linux (Fedora)
+sudo dnf install dua-cli
+
+# Windows (Scoop)
+scoop install dua
+
+# Windows (winget)
+winget install Byron.dua-cli
+
+# Cross-platform (via Cargo/rustup)
+cargo install dua-cli
+```
+
+Or use pre-built binaries or the project's install script; see the project's releases and README for more options: https://github.com/Byron/dua-cli/releases
+
 ### Before Yazi's version 25.5.28
 
 - Use this commit: [Old version](https://github.com/pirafrank/what-size.yazi/commit/d8966568f2a80394bf1f9a1ace6708ddd4cc8154)
 - `du` on Linux and macOS
 - PowerShell on Windows
 
-### On Yazi's version 25.5.28 or newer
-
-- No requirement
-
 ## Installation
 
 ```sh
-ya pkg add pirafrank/what-size
-```
-
-or (**DEPRECATED** - use only for yazi `25.4.8` and older):
-
-```sh
-ya pack -a 'pirafrank/what-size'
+ya pkg add Snowworm3000/what-size-dua
 ```
 
 ## Usage
@@ -59,7 +80,7 @@ Add this to your `~/.config/yazi/keymap.toml`:
 ```toml
 [[mgr.prepend_keymap]]
 on = [ ".", "s" ]
-run  = "plugin what-size"
+run  = "plugin what-size-dua"
 desc = "Calc size of selection or cwd" 
 ```
 
@@ -68,14 +89,14 @@ If you want to copy the result to clipboard, you can add `--clipboard` or `-c` a
 ```toml
 [[mgr.prepend_keymap]]
 on   = [ ".", "s" ]
-run  = "plugin what-size -- '--clipboard'"
+run  = "plugin what-size-dua -- '--clipboard'"
 desc = "Calc size of sel/cwd + paste to clipboard"
 ```
 
 ```toml
 [[mgr.prepend_keymap]]
 on = [ ".", "s" ]
-run = "plugin what-size -- '-c'"
+run = "plugin what-size-dua -- '-c'"
 desc = "Calc size of sel/cwd + paste to clipboard"
 ```
 
@@ -86,7 +107,7 @@ Change to whatever keybinding you like.
 If you want to place the size value exactly where you want, modify the priority value. Also changing two strings `LEFT` and `RIGHT` will add them to the left and right side of the value. Remember to add to and change these lines inside your `init.lua` file if you want to customize, or the plugin will use this configuration by default:
 
 ```lua
-require("what-size"):setup({
+require("what-size-dua"):setup({
     priority = 400,
     LEFT = "",
     RIGHT = " ",

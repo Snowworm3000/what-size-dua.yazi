@@ -1,6 +1,7 @@
 --- @since 25.5.28
 -- This plugin is now only supporting Yazi's version 25.5.28 or newer
 -- since commit https://github.com/sxyazi/yazi/pull/2695
+-- NOTE: This version uses dua-cli for improved performance instead of fs.calc_size()
 
 -- TODO: Asynchronous calculating and dynamic displaying in statusline,
 -- perhaps by using this:
@@ -67,22 +68,33 @@ local function get_paths(selected)
     end
 end
 -- }}}1
--- Function to get total size using Yazi's fs.calc_size API {{{1
--- See: https://github.com/sxyazi/yazi/pull/2695
--- See: https://github.com/sxyazi/yazi/blob/main/yazi-plugin/preset/plugins/folder.lua
+-- Function to get total size using dua-cli for better performance {{{1
+-- dua is a faster alternative to du for calculating directory sizes
 local function get_total_size(items)
     local total = 0
+
     for _, url in ipairs(items) do
-        local it = fs.calc_size(url)
-        while true do
-            local next = it:recv()
-            if next then
-                total = total + next
-            else
-                break
+        local path = tostring(url)
+        -- Run dua aggregates to get total size in bytes
+        local handle = io.popen("dua aggregate '" .. path:gsub("'", "'\\''") .. "' 2>/dev/null")
+        if not handle then
+            ya.err("Failed to execute dua command")
+            return nil
+        end
+
+        local output = handle:read("*a")
+        handle:close()
+
+        -- Parse dua output: format is typically "SIZE\tPATH"
+        -- Extract the first number (size in bytes)
+        if output and output ~= "" then
+            local size_str = output:match("^(%d+)")
+            if size_str then
+                total = total + tonumber(size_str)
             end
         end
     end
+
     return total
 end
 -- }}}1
