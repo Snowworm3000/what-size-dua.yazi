@@ -28,15 +28,15 @@ Please notice that `nightly` releses may work but are not explicitly supported.
 
 ## Requirements
 
+### On Yazi's version 25.5.28 or newer
+
+- `dua` - A faster disk usage analyzer (install via your package manager or [https://github.com/Byron/dua-cli](https://github.com/Byron/dua-cli))
+
 ### Before Yazi's version 25.5.28
 
 - Use this commit: [Old version](https://github.com/pirafrank/what-size.yazi/commit/d8966568f2a80394bf1f9a1ace6708ddd4cc8154)
 - `du` on Linux and macOS
 - PowerShell on Windows
-
-### On Yazi's version 25.5.28 or newer
-
-- No requirement
 
 ## Installation
 
